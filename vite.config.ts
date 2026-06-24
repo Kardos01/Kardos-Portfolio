@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: "dist/spa",
   },
-  base:"/Kardos-Portfolio",
+  base:"/Kardos-Portfolio/",
   plugins: [react(), expressPlugin()],
   resolve: {
     alias: {
