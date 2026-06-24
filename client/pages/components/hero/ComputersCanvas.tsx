@@ -7,13 +7,15 @@ type ComputerModelProps = {
   isMobile: boolean;
 };
 
-const ComputerModel = ({ isMobile }: ComputerModelProps) => {
-const { scene } = useGLTF("/desktop_pc/scene.gltf");
+const MODEL_PATH = `${import.meta.env.BASE_URL}desktop_pc/scene.gltf`;
 
+const ComputerModel = ({ isMobile }: ComputerModelProps) => {
+  const { scene } = useGLTF(MODEL_PATH);
 
   return (
     <mesh>
       <hemisphereLight intensity={0.3} groundColor="black" />
+
       <spotLight
         position={[-20, 50, 10]}
         angle={0.12}
@@ -22,6 +24,7 @@ const { scene } = useGLTF("/desktop_pc/scene.gltf");
         castShadow
         shadow-mapSize={1024}
       />
+
       <pointLight intensity={1.2} />
 
       <primitive
@@ -47,6 +50,7 @@ const ComputersCanvas = () => {
     };
 
     setIsMobile(mediaQuery.matches);
+
     mediaQuery.addEventListener("change", handleMediaQueryChange);
 
     return () => {
@@ -69,6 +73,7 @@ const ComputersCanvas = () => {
           maxPolarAngle={Math.PI / 2}
           minPolarAngle={Math.PI / 2}
         />
+
         <MemoizedComputerModel isMobile={isMobile} />
       </Suspense>
 
@@ -77,7 +82,6 @@ const ComputersCanvas = () => {
   );
 };
 
-useGLTF.preload("/desktop_pc/scene.gltf");
+useGLTF.preload(MODEL_PATH);
 
 export default ComputersCanvas;
-``

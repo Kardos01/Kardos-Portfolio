@@ -403,15 +403,15 @@ export default function Index() {
           border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        .noise-overlay {
-          position: fixed;
-          inset: 0;
-          pointer-events: none;
-          opacity: 0.03;
-          mix-blend-mode: overlay;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          z-index: 1;
-        }
+      .noise-overlay {.noise: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.03;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        z-index: 1;
+      }
+
 
         .mesh-blob {
           position: absolute;
@@ -507,11 +507,16 @@ export default function Index() {
           transition: transform 0.15s ease-out, opacity 0.2s ease;
           transform: translate(-50%, -50%) scale(1);
           box-shadow:
-            0 0 20px rgba(34, 211, 238, 0.6),
-            0 0 40px rgba(167, 139, 250, 0.25);
+            0 0 20px rgba(34, 211, 238, 0.7),
+            0 0 40px rgba(167, 139, 250, 0.35);
           opacity: 0;
           will-change: transform, left, top, opacity;
         }
+        @media (max-width: 768px) {
+          .cursor-dot { display: none; }
+          .cursor-none { cursor: auto !important; }
+        }
+
         .hover-accent-text {
           transition: color 0.3s ease, text-shadow 0.3s ease;
         }
@@ -845,7 +850,8 @@ export default function Index() {
               </button>
 
               <a
-                href="/KardosAhmed.pdf"
+                href="/Kardos-Portfolio/KardosAhmed.pdf"
+
                 download
                 className="w-full sm:w-auto px-8 py-3 glass-card glass-card-hover text-[#F4F4F4] rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
               >
