@@ -195,59 +195,63 @@ export default function Index() {
     };
   }, []);
 
-  useEffect(() => {
-    const cursorEl = cursorRef.current;
-    if (!cursorEl) return;
+useEffect(() => {
+  const cursorEl = cursorRef.current;
+  if (!cursorEl) return;
 
-    const isMobileWidth = window.innerWidth <= 768;
-    if (isMobileWidth) return;
+  const isTouchDevice =
+    "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
-    let latestX = 0;
-    let latestY = 0;
-    let latestScale = 1;
-    let visible = false;
+  if (isTouchDevice) return;
 
-    const renderCursor = () => {
-      cursorEl.style.left = `${latestX}px`;
-      cursorEl.style.top = `${latestY}px`;
-      cursorEl.style.opacity = visible ? "1" : "0";
-      cursorEl.style.transform = `translate(-50%, -50%) scale(${latestScale})`;
-      cursorRafRef.current = null;
-    };
+  let latestX = 0;
+  let latestY = 0;
+  let latestScale = 1;
+  let visible = false;
 
-    const queueRender = () => {
-      if (cursorRafRef.current !== null) return;
-      cursorRafRef.current = window.requestAnimationFrame(renderCursor);
-    };
+  const renderCursor = () => {
+    cursorEl.style.left = `${latestX}px`;
+    cursorEl.style.top = `${latestY}px`;
+    cursorEl.style.opacity = visible ? "1" : "0";
+    cursorEl.style.transform = `translate(-50%, -50%) scale(${latestScale})`;
+    cursorRafRef.current = null;
+  };
 
-    const onMove = (e: MouseEvent) => {
-      latestX = e.clientX;
-      latestY = e.clientY;
-      visible = true;
+  const queueRender = () => {
+    if (cursorRafRef.current !== null) return;
+    cursorRafRef.current = window.requestAnimationFrame(renderCursor);
+  };
 
-      const target = e.target as HTMLElement;
-      const interactive = target.closest("a, button, [role='button']");
-      latestScale = interactive ? 2.2 : 1;
+  const onMove = (e: MouseEvent) => {
+    latestX = e.clientX;
+    latestY = e.clientY;
+    visible = true;
 
-      queueRender();
-    };
+    const target = e.target as HTMLElement;
+    const interactive = target.closest("a, button, [role='button']");
+    latestScale = interactive ? 2.2 : 1;
 
-    const onLeave = () => {
-      visible = false;
-      queueRender();
-    };
+    queueRender();
+  };
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseleave", onLeave);
+  const onLeave = () => {
+    visible = false;
+    queueRender();
+  };
 
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseleave", onLeave);
-      if (cursorRafRef.current !== null) {
-        window.cancelAnimationFrame(cursorRafRef.current);
-      }
-    };
-  }, []);
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseleave", onLeave);
+
+  return () => {
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseleave", onLeave);
+
+    if (cursorRafRef.current !== null) {
+      window.cancelAnimationFrame(cursorRafRef.current);
+    }
+  };
+}, []);
+
 
   useEffect(() => {
     const updateIndicator = () => {
@@ -403,14 +407,15 @@ export default function Index() {
           border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-      .noise-overlay {.noise: fixed;
-        inset: 0;
-        pointer-events: none;
-        opacity: 0.03;
-        mix-blend-mode: overlay;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        z-index: 1;
-      }
+        .noise-overlay {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          opacity: 0.03;
+          mix-blend-mode: overlay;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          z-index: 1;
+        }
 
 
         .mesh-blob {
@@ -496,7 +501,7 @@ export default function Index() {
           -webkit-text-fill-color: transparent;
         }
 
-        .cursor-dot {
+       .cursor-dot {
           position: fixed;
           width: 14px;
           height: 14px;
@@ -512,10 +517,13 @@ export default function Index() {
           opacity: 0;
           will-change: transform, left, top, opacity;
         }
+
         @media (max-width: 768px) {
-          .cursor-dot { display: none; }
-          .cursor-none { cursor: auto !important; }
+          .cursor-dot {
+            display: none;
+          }
         }
+
 
         .hover-accent-text {
           transition: color 0.3s ease, text-shadow 0.3s ease;
@@ -809,11 +817,10 @@ export default function Index() {
                 </div>
               </div>
 
-              <div className="mb-4 flex flex-col items-center lg:items-start">
-                <div className="w-4 h-4 rounded-full bg-[#22D3EE] mb-3" />
-                <div className="w-1 h-16 bg-gradient-to-b from-[#22D3EE] via-[#A78BFA] to-transparent rounded-full" />
-              </div>
-
+             <div className="mb-4 flex flex-col items-center w-4">
+              <div className="w-4 h-4 rounded-full bg-[#22D3EE] mb-3" />
+              <div className="w-[3px] h-16 bg-gradient-to-b from-[#22D3EE] via-[#A78BFA] to-transparent rounded-full" />
+            </div>
               <h1 className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-montserrat font-bold leading-tight tracking-tight">
                 <span className="text-white">Hi, I&apos;m </span>
                 <span className="gradient-text">{personalInfo.shortName}</span>
@@ -1317,9 +1324,6 @@ export default function Index() {
           <p className="text-[#9CA0B5] text-xs sm:text-sm flex items-center justify-center gap-2 flex-wrap">
             <span>© {new Date().getFullYear()} {personalInfo.name}.</span>
             <span className="text-[#22D3EE]">•</span>
-            <span>Made with</span>
-            <Star size={12} className="text-[#A78BFA] fill-[#A78BFA]" />
-            <span>in Sulaymaniyah</span>
           </p>
         </div>
       </footer>
