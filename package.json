@@ -16,7 +16,8 @@
     "db:migrate": "drizzle-kit migrate",
     "ci:guard-no-drizzle-push": "node scripts/guard-no-drizzle-push.mjs",
     "predeploy":"npm run build",
-    "deploy":"gh-pages -d dist/spa"
+    "deploy": "npm run build && gh-pages -d dist/spa"
+
 
   },
   "dependencies": {
