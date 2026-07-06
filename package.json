@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/maybe-migrate.mjs && vite",
-    "build": "npm run build:client && npm run build:server",
+    "build": "npm run build:client", 
     "build:client": "vite build",
     "build:server": "vite build --config vite.config.server.ts",
     "start": "node dist/server/node-build.mjs",
@@ -15,10 +15,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "ci:guard-no-drizzle-push": "node scripts/guard-no-drizzle-push.mjs",
-    "predeploy":"npm run build",
-    "deploy": "npm run build && gh-pages -d dist/spa"
-
-
+    "predeploy": "npm run build",
+    "deploy": "npm run build && gh-pages -d dist" 
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

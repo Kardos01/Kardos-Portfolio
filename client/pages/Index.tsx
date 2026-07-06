@@ -203,23 +203,29 @@ export default function Index() {
       }
     };
   }, []);
+
 useEffect(() => {
+  if (isPageLoading) return;
+
   const cursorEl = cursorRef.current;
   if (!cursorEl) return;
 
   cursorEl.style.display = "block";
   cursorEl.style.visibility = "visible";
-  cursorEl.style.opacity = "0";
+  cursorEl.style.opacity = "1";
+  cursorEl.style.position = "fixed";
+  cursorEl.style.zIndex = "2147483647";
 
   let latestX = window.innerWidth / 2;
   let latestY = window.innerHeight / 2;
   let latestScale = 1;
-  let visible = false;
 
   const renderCursor = () => {
     cursorEl.style.left = `${latestX}px`;
     cursorEl.style.top = `${latestY}px`;
-    cursorEl.style.opacity = visible ? "1" : "0";
+    cursorEl.style.opacity = "1";
+    cursorEl.style.display = "block";
+    cursorEl.style.visibility = "visible";
     cursorEl.style.transform = `translate(-50%, -50%) scale(${latestScale})`;
     cursorRafRef.current = null;
   };
@@ -229,10 +235,9 @@ useEffect(() => {
     cursorRafRef.current = window.requestAnimationFrame(renderCursor);
   };
 
-  const onMove = (e: globalThis.MouseEvent) => {
+  const onPointerMove = (e: globalThis.PointerEvent) => {
     latestX = e.clientX;
     latestY = e.clientY;
-    visible = true;
 
     const target = e.target as HTMLElement | null;
     const interactive = target?.closest(
@@ -243,25 +248,19 @@ useEffect(() => {
     queueRender();
   };
 
-  const onLeave = () => {
-    visible = false;
-    queueRender();
-  };
+  document.addEventListener("pointermove", onPointerMove, { passive: true });
 
-  window.addEventListener("mousemove", onMove, { passive: true });
-  document.addEventListener("mousemove", onMove, { passive: true });
-  document.addEventListener("mouseleave", onLeave);
+  renderCursor();
 
   return () => {
-    window.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseleave", onLeave);
+    document.removeEventListener("pointermove", onPointerMove);
 
     if (cursorRafRef.current !== null) {
       window.cancelAnimationFrame(cursorRafRef.current);
+      cursorRafRef.current = null;
     }
   };
-}, []);
+}, [isPageLoading]);
 
   useEffect(() => {
     const updateIndicator = () => {
@@ -383,7 +382,6 @@ useEffect(() => {
           className="aurora bg-gradient-to-r from-transparent via-[#A78BFA] to-transparent top-[60%] left-[40%]"
           style={{ animationDelay: "6s" }}
         />
-
         <svg
           className="absolute inset-0 w-full h-full opacity-[0.04]"
           xmlns="http://www.w3.org/2000/svg"
@@ -400,6 +398,7 @@ useEffect(() => {
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
         </svg>
+        
       </div>
 
       <div className="noise-overlay" />
