@@ -1,9 +1,41 @@
-import { User, Code2, Briefcase, FolderKanban, MessageCircle } from "lucide-react";
+import {
+  User,
+  Code2,
+  Briefcase,
+  FolderKanban,
+  GraduationCap,
+  Mail,
+} from "lucide-react";
 
 export const navLinks = [
-  { label: "About", id: "about", icon: User },
-  { label: "Skills", id: "skills", icon: Code2 },
-  { label: "Experience", id: "experience", icon: Briefcase },
-  { label: "Projects", id: "projects", icon: FolderKanban },
-  { label: "Contact", id: "contact", icon: MessageCircle },
+  {
+    id: "about",
+    label: "About",
+    icon: User,
+  },
+  {
+    id: "skills",
+    label: "Skills",
+    icon: Code2,
+  },
+  {
+    id: "experience",
+    label: "Experience",
+    icon: Briefcase,
+  },
+  {
+    id: "projects",
+    label: "Projects",
+    icon: FolderKanban,
+  },
+  {
+    id: "education",
+    label: "Education",
+    icon: GraduationCap,
+  },
+  {
+    id: "contact",
+    label: "Contact",
+    icon: Mail,
+  },
 ];

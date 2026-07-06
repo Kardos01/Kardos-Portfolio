@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   Menu,
   X,
@@ -26,9 +27,10 @@ import { projects } from "./data/projects";
 import { contactItems } from "./data/contact";
 import { socialLinks } from "./data/social";
 import { languages } from "./data/languages";
-import PortfolioSkeleton from "./components/PortfolioSkeleton";
 import { education, certifications } from "./data/education";
+import PortfolioSkeleton from "./components/PortfolioSkeleton";
 import ComputersCanvas from "./components/hero/ComputersCanvas";
+import "./styles/portfolio.css";
 
 type IndicatorStyle = {
   left: number;
@@ -46,6 +48,13 @@ export default function Index() {
   const [typingIndex, setTypingIndex] = useState(0);
 
   const progressBarRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const navButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const aboutRef = useRef<HTMLDivElement>(null);
+  const spotlightRef = useRef<HTMLDivElement>(null);
+  const scrollRafRef = useRef<number | null>(null);
+  const cursorRafRef = useRef<number | null>(null);
 
   const [indicatorStyle, setIndicatorStyle] = useState<IndicatorStyle>({
     left: 0,
@@ -59,25 +68,19 @@ export default function Index() {
     opacity: 0,
   });
 
-  const navRef = useRef<HTMLDivElement>(null);
-  const navButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const cursorRef = useRef<HTMLDivElement>(null);
-  const aboutRef = useRef<HTMLDivElement>(null);
-  const spotlightRef = useRef<HTMLDivElement>(null);
-  const scrollRafRef = useRef<number | null>(null);
-  const cursorRafRef = useRef<number | null>(null);
-
-  const typingTitles = personalInfo.typingTitles;
+  const typingTitles = personalInfo.typingTitles ?? [];
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       setIsPageLoading(false);
     }, 900);
 
-    return () => clearTimeout(timer);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
+    if (!typingTitles.length) return;
+
     const current = typingTitles[typingIndex];
     let charIndex = 0;
     let timeout: ReturnType<typeof setTimeout>;
@@ -85,19 +88,20 @@ export default function Index() {
     const type = () => {
       if (charIndex <= current.length) {
         setTypedText(current.slice(0, charIndex));
-        charIndex++;
+        charIndex += 1;
         timeout = setTimeout(type, 80);
       } else {
         timeout = setTimeout(() => {
           const erase = () => {
             if (charIndex > 0) {
-              charIndex--;
+              charIndex -= 1;
               setTypedText(current.slice(0, charIndex));
               timeout = setTimeout(erase, 40);
             } else {
               setTypingIndex((prev) => (prev + 1) % typingTitles.length);
             }
           };
+
           erase();
         }, 2000);
       }
@@ -113,10 +117,8 @@ export default function Index() {
       const nextScrolled = window.scrollY > 50;
       setIsScrolled((prev) => (prev === nextScrolled ? prev : nextScrolled));
 
-      const scrollHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
-      const progress =
-        scrollHeight > 0 ? (window.scrollY / scrollHeight) * 100 : 0;
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = scrollHeight > 0 ? (window.scrollY / scrollHeight) * 100 : 0;
 
       if (progressBarRef.current) {
         progressBarRef.current.style.width = `${progress}%`;
@@ -138,6 +140,7 @@ export default function Index() {
         for (const section of sections) {
           const rect = section.getBoundingClientRect();
           const id = section.dataset.section;
+
           if (!id) continue;
 
           if (rect.top <= 140 && rect.bottom >= 140) {
@@ -148,9 +151,11 @@ export default function Index() {
       }
 
       const newVisible = new Set<string>();
+
       sections.forEach((section) => {
         const rect = section.getBoundingClientRect();
         const id = section.dataset.section;
+
         if (!id) return;
 
         if (rect.top < window.innerHeight * 0.8) {
@@ -165,9 +170,11 @@ export default function Index() {
 
         if (merged.size === prev.size) {
           let same = true;
+
           prev.forEach((value) => {
             if (!merged.has(value)) same = false;
           });
+
           if (same) return prev;
         }
 
@@ -183,29 +190,29 @@ export default function Index() {
     };
 
     updateScrollState();
+
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
 
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
+
       if (scrollRafRef.current !== null) {
         window.cancelAnimationFrame(scrollRafRef.current);
       }
     };
   }, []);
-
 useEffect(() => {
   const cursorEl = cursorRef.current;
   if (!cursorEl) return;
 
-  const isTouchDevice =
-    "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  cursorEl.style.display = "block";
+  cursorEl.style.visibility = "visible";
+  cursorEl.style.opacity = "0";
 
-  if (isTouchDevice) return;
-
-  let latestX = 0;
-  let latestY = 0;
+  let latestX = window.innerWidth / 2;
+  let latestY = window.innerHeight / 2;
   let latestScale = 1;
   let visible = false;
 
@@ -222,15 +229,17 @@ useEffect(() => {
     cursorRafRef.current = window.requestAnimationFrame(renderCursor);
   };
 
-  const onMove = (e: MouseEvent) => {
+  const onMove = (e: globalThis.MouseEvent) => {
     latestX = e.clientX;
     latestY = e.clientY;
     visible = true;
 
-    const target = e.target as HTMLElement;
-    const interactive = target.closest("a, button, [role='button']");
-    latestScale = interactive ? 2.2 : 1;
+    const target = e.target as HTMLElement | null;
+    const interactive = target?.closest(
+      "a, button, [role='button'], input, textarea, select"
+    );
 
+    latestScale = interactive ? 2.15 : 1;
     queueRender();
   };
 
@@ -239,19 +248,20 @@ useEffect(() => {
     queueRender();
   };
 
-  window.addEventListener("mousemove", onMove);
-  window.addEventListener("mouseleave", onLeave);
+  window.addEventListener("mousemove", onMove, { passive: true });
+  document.addEventListener("mousemove", onMove, { passive: true });
+  document.addEventListener("mouseleave", onLeave);
 
   return () => {
     window.removeEventListener("mousemove", onMove);
-    window.removeEventListener("mouseleave", onLeave);
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseleave", onLeave);
 
     if (cursorRafRef.current !== null) {
       window.cancelAnimationFrame(cursorRafRef.current);
     }
   };
 }, []);
-
 
   useEffect(() => {
     const updateIndicator = () => {
@@ -281,6 +291,7 @@ useEffect(() => {
 
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
+
     return () => {
       document.body.style.overflow = "";
     };
@@ -311,7 +322,7 @@ useEffect(() => {
     setHoverStyle((prev) => ({ ...prev, opacity: 0 }));
   };
 
-  const handleAboutMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleAboutMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
     if (!aboutRef.current || !spotlightRef.current) return;
 
     const rect = aboutRef.current.getBoundingClientRect();
@@ -328,8 +339,14 @@ useEffect(() => {
     spotlightRef.current.style.opacity = "0";
   };
 
-  const isAboutActive =
-    activeSection === "about" || visibleSections.has("about");
+  const sectionClass = (id: string) =>
+    `py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative z-10 transition-all duration-700 ${
+      visibleSections.has(id)
+        ? "opacity-100 translate-y-0"
+        : "opacity-0 translate-y-10"
+    }`;
+
+  const isAboutActive = activeSection === "about" || visibleSections.has("about");
 
   if (isPageLoading) {
     return <PortfolioSkeleton />;
@@ -337,226 +354,6 @@ useEffect(() => {
 
   return (
     <div className="bg-[#0A0A0F] text-[#F4F4F4] min-h-screen font-inter overflow-x-hidden cursor-none">
-      <style>{`
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
-        @keyframes mesh-shift {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.08); }
-          66% { transform: translate(-20px, 20px) scale(0.97); }
-        }
-        @keyframes glow {
-          0%, 100% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.3), 0 0 40px rgba(34, 211, 238, 0.1); }
-          50% { box-shadow: 0 0 28px rgba(34, 211, 238, 0.45), 0 0 54px rgba(34, 211, 238, 0.16); }
-        }
-        @keyframes pulse-glow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.65; } }
-        @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes word-reveal {
-          from { color: #4A4A4A; opacity: 0.4; filter: blur(2px); }
-          to { color: #F4F4F4; opacity: 1; filter: blur(0); }
-        }
-        @keyframes stagger-in {
-          from { opacity: 0; transform: translateX(-20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
-        @keyframes aurora {
-          0%, 100% { transform: translateX(-30%) translateY(0); opacity: 0.45; }
-          50% { transform: translateX(30%) translateY(-20px); opacity: 0.7; }
-        }
-
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        .animate-glow { animation: glow 3s ease-in-out infinite; }
-        .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
-        .animate-fade-in { animation: fade-in 0.8s ease-out backwards; }
-
-        .glass-card {
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
-          backdrop-filter: blur(18px) saturate(180%);
-          -webkit-backdrop-filter: blur(18px) saturate(180%);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4),
-                      inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
-          position: relative;
-        }
-        .glass-card::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          padding: 1px;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent 40%, rgba(34, 211, 238, 0.1));
-          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          -webkit-mask-composite: xor;
-          mask-composite: exclude;
-          pointer-events: none;
-        }
-        .glass-card-hover:hover {
-          background: linear-gradient(135deg, rgba(34, 211, 238, 0.06) 0%, rgba(167, 139, 250, 0.04) 100%);
-          border-color: rgba(34, 211, 238, 0.4);
-          box-shadow: 0 12px 40px 0 rgba(34, 211, 238, 0.16),
-                      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
-        }
-        .glass-strong {
-          background: rgba(15, 15, 25, 0.55);
-          backdrop-filter: blur(22px) saturate(180%);
-          -webkit-backdrop-filter: blur(22px) saturate(180%);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .noise-overlay {
-          position: fixed;
-          inset: 0;
-          pointer-events: none;
-          opacity: 0.03;
-          mix-blend-mode: overlay;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          z-index: 1;
-        }
-
-
-        .mesh-blob {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(75px);
-          animation: mesh-shift 20s ease-in-out infinite;
-          will-change: transform;
-        }
-
-        .aurora {
-          position: absolute;
-          width: 60%;
-          height: 100px;
-          filter: blur(50px);
-          animation: aurora 12s ease-in-out infinite;
-          opacity: 0.5;
-          will-change: transform, opacity;
-        }
-
-        .about-word {
-          color: #4A4A4A;
-          opacity: 0.4;
-          display: inline-block;
-          transition: color 0.3s ease;
-        }
-        .about-active .about-word {
-          animation: word-reveal 0.5s ease-out forwards;
-        }
-
-        .about-spotlight {
-          position: absolute;
-          pointer-events: none;
-          width: 320px;
-          height: 320px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(34, 211, 238, 0.18) 0%, rgba(167, 139, 250, 0.1) 40%, transparent 70%);
-          transform: translate(-50%, -50%);
-          transition: opacity 0.25s ease;
-          mix-blend-mode: screen;
-          z-index: 5;
-          opacity: 0;
-          will-change: transform, opacity, left, top;
-        }
-        .about-text-layer { position: relative; z-index: 10; }
-
-        .nav-indicator {
-          position: absolute;
-          bottom: -8px;
-          height: 3px;
-          border-radius: 999px;
-          background: linear-gradient(90deg, #22D3EE, #A78BFA, #22D3EE);
-          background-size: 200% 100%;
-          animation: shimmer 3s linear infinite;
-          box-shadow: 0 0 12px rgba(34, 211, 238, 0.7), 0 0 24px rgba(167, 139, 250, 0.4);
-          transition: left 0.55s cubic-bezier(0.65, 0, 0.35, 1),
-                      width 0.55s cubic-bezier(0.65, 0, 0.35, 1),
-                      opacity 0.3s ease;
-          pointer-events: none;
-        }
-        .nav-hover-indicator {
-          position: absolute;
-          bottom: -8px;
-          height: 2px;
-          border-radius: 999px;
-          background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.6), rgba(34, 211, 238, 0.9));
-          transition: left 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-                      width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-                      opacity 0.25s ease;
-          pointer-events: none;
-        }
-
-        .gradient-text {
-          background: linear-gradient(135deg, #22D3EE 0%, #A78BFA 50%, #F472B6 100%);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        .gradient-text-2 {
-          background: linear-gradient(90deg, #FFFFFF 0%, #A78BFA 100%);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-       .cursor-dot {
-          position: fixed;
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          background: radial-gradient(circle, #22D3EE 0%, #A78BFA 100%);
-          pointer-events: none;
-          z-index: 9999;
-          transition: transform 0.15s ease-out, opacity 0.2s ease;
-          transform: translate(-50%, -50%) scale(1);
-          box-shadow:
-            0 0 20px rgba(34, 211, 238, 0.7),
-            0 0 40px rgba(167, 139, 250, 0.35);
-          opacity: 0;
-          will-change: transform, left, top, opacity;
-        }
-
-        @media (max-width: 768px) {
-          .cursor-dot {
-            display: none;
-          }
-        }
-
-
-        .hover-accent-text {
-          transition: color 0.3s ease, text-shadow 0.3s ease;
-        }
-        .hover-accent-text:hover {
-          color: #F472B6;
-          text-shadow: 0 0 10px rgba(244, 114, 182, 0.25);
-        }
-        @media (max-width: 768px) {
-          .cursor-dot { display: none; }
-          .cursor-none { cursor: auto !important; }
-        }
-
-        .typing-cursor {
-          display: inline-block;
-          width: 3px;
-          height: 1em;
-          background: #22D3EE;
-          margin-left: 4px;
-          vertical-align: text-bottom;
-          animation: blink 1s steps(1) infinite;
-        }
-
-        .project-card {
-          transform-style: preserve-3d;
-          transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-          will-change: transform;
-        }
-        .project-card:hover {
-          transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-6px);
-        }
-      `}</style>
-
       <div ref={cursorRef} className="cursor-dot" />
 
       <div className="fixed top-0 left-0 right-0 h-0.5 z-[60] pointer-events-none">
@@ -593,7 +390,12 @@ useEffect(() => {
         >
           <defs>
             <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#22D3EE" strokeWidth="1" />
+              <path
+                d="M 60 0 L 0 0 0 60"
+                fill="none"
+                stroke="#22D3EE"
+                strokeWidth="1"
+              />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -602,7 +404,11 @@ useEffect(() => {
 
       <div className="noise-overlay" />
 
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${isScrolled ? "py-2" : "py-3"}`}>
+      <nav
+        className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+          isScrolled ? "py-2" : "py-3"
+        }`}
+      >
         <div
           className={`max-w-6xl mx-3 sm:mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between relative z-20 transition-all duration-500 ${
             isScrolled ? "glass-strong rounded-2xl py-3 mt-2" : "py-4 bg-transparent"
@@ -622,6 +428,7 @@ useEffect(() => {
           >
             {navLinks.map((link) => {
               const isActive = activeSection === link.id;
+
               return (
                 <button
                   key={link.id}
@@ -653,6 +460,7 @@ useEffect(() => {
                 opacity: hoverStyle.opacity,
               }}
             />
+
             <span
               className="nav-indicator"
               style={{
@@ -665,7 +473,7 @@ useEffect(() => {
 
           <button
             className="md:hidden relative w-10 h-10 flex items-center justify-center rounded-xl glass-card text-[#22D3EE] hover:border-[#22D3EE] transition-all duration-300"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
             aria-label="Toggle menu"
           >
             <div className="relative w-5 h-5">
@@ -688,7 +496,9 @@ useEffect(() => {
 
       <div
         className={`md:hidden fixed inset-0 z-40 transition-all duration-500 ${
-          isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          isMobileMenuOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         }`}
       >
         <div
@@ -765,6 +575,7 @@ useEffect(() => {
             <div className="mt-10 pt-6 border-t border-white/10 flex justify-center gap-3">
               {socialLinks.map((social) => {
                 const Icon = social.icon;
+
                 return (
                   <a
                     key={social.key}
@@ -791,17 +602,13 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* HERO */}
       <section className="relative min-h-screen w-full mx-auto overflow-hidden z-10 pt-28 pb-28 md:pb-32 px-4 sm:px-6 lg:px-8">
-        {/* Background glow */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-[500px] h-[500px] rounded-full bg-gradient-to-br from-[#22D3EE]/10 to-[#A78BFA]/10 blur-3xl animate-pulse-glow" />
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10 flex flex-col items-center">
-          {/* TOP AREA: name on left, computer on right */}
           <div className="w-full flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8">
-            {/* LEFT SIDE: only name + typing text */}
             <div className="w-full lg:w-[40%] flex flex-col items-center lg:items-start text-center lg:text-left">
               <div className="mb-6">
                 <div className="bg-gradient-to-r from-[#22D3EE] via-[#A78BFA] to-[#F472B6] p-0.5 rounded-full w-fit animate-glow">
@@ -817,10 +624,11 @@ useEffect(() => {
                 </div>
               </div>
 
-             <div className="mb-4 flex flex-col items-center w-4">
-              <div className="w-4 h-4 rounded-full bg-[#22D3EE] mb-3" />
-              <div className="w-[3px] h-16 bg-gradient-to-b from-[#22D3EE] via-[#A78BFA] to-transparent rounded-full" />
-            </div>
+              <div className="mb-4 flex flex-col items-center w-4">
+                <div className="w-4 h-4 rounded-full bg-[#22D3EE] mb-3" />
+                <div className="w-[3px] h-16 bg-gradient-to-b from-[#22D3EE] via-[#A78BFA] to-transparent rounded-full" />
+              </div>
+
               <h1 className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-montserrat font-bold leading-tight tracking-tight">
                 <span className="text-white">Hi, I&apos;m </span>
                 <span className="gradient-text">{personalInfo.shortName}</span>
@@ -832,13 +640,11 @@ useEffect(() => {
               </p>
             </div>
 
-            {/* RIGHT SIDE: computer */}
             <div className="w-full lg:w-[60%] h-[300px] sm:h-[400px] md:h-[500px] lg:h-[560px]">
               <ComputersCanvas />
             </div>
           </div>
 
-          {/* BOTTOM AREA: description + buttons + stats under computer */}
           <div className="w-full mt-8 flex flex-col items-center text-center">
             <p className="text-base sm:text-lg text-[#9CA0B5] max-w-3xl leading-relaxed">
               {personalInfo.heroDescription}
@@ -858,7 +664,6 @@ useEffect(() => {
 
               <a
                 href="/Kardos-Portfolio/KardosAhmed.pdf"
-
                 download
                 className="w-full sm:w-auto px-8 py-3 glass-card glass-card-hover text-[#F4F4F4] rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
               >
@@ -883,23 +688,19 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* Scroll indicator */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex justify-center items-center z-10">
-          <button onClick={() => scrollToSection("about")} aria-label="Scroll to about section">
+          <button
+            onClick={() => scrollToSection("about")}
+            aria-label="Scroll to about section"
+          >
             <div className="w-[34px] h-[60px] rounded-3xl border-2 border-[#A78BFA] flex justify-center items-start p-2">
               <div className="w-2.5 h-2.5 rounded-full bg-[#22D3EE] animate-bounce" />
             </div>
           </button>
         </div>
       </section>
-      {/* ABOUT */}
-      <section
-        id="about"
-        data-section="about"
-        className={`py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative z-10 transition-all duration-700 ${
-          visibleSections.has("about") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-        }`}
-      >
+
+      <section id="about" data-section="about" className={sectionClass("about")}>
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-montserrat font-bold mb-10 sm:mb-12 text-center">
             About <span className="gradient-text">Me</span>
@@ -923,7 +724,7 @@ useEffect(() => {
                   const words = paragraph.split(" ");
                   let wordCounter = 0;
 
-                  for (let i = 0; i < pIdx; i++) {
+                  for (let i = 0; i < pIdx; i += 1) {
                     wordCounter += aboutParagraphs[i].split(" ").length;
                   }
 
@@ -936,9 +737,10 @@ useEffect(() => {
                     >
                       {words.map((word, wIdx) => {
                         const globalIdx = wordCounter + wIdx;
+
                         return (
                           <span
-                            key={wIdx}
+                            key={`${word}-${wIdx}`}
                             className="about-word"
                             style={{ animationDelay: `${globalIdx * 0.04}s` }}
                           >
@@ -956,14 +758,7 @@ useEffect(() => {
         </div>
       </section>
 
-      {/* SKILLS */}
-      <section
-        id="skills"
-        data-section="skills"
-        className={`py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative z-10 transition-all duration-700 ${
-          visibleSections.has("skills") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-        }`}
-      >
+      <section id="skills" data-section="skills" className={sectionClass("skills")}>
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-montserrat font-bold mb-12 sm:mb-16 text-center">
             Technical <span className="gradient-text">Skills</span>
@@ -972,6 +767,7 @@ useEffect(() => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {skills.map((skill, idx) => {
               const Icon = skill.icon;
+
               return (
                 <div key={idx} className="group relative">
                   <div className="glass-card glass-card-hover rounded-2xl p-6 sm:p-8 transition-all duration-300 transform group-hover:-translate-y-2 h-full">
@@ -979,6 +775,7 @@ useEffect(() => {
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#22D3EE]/20 to-[#A78BFA]/20 border border-[#22D3EE]/30 flex items-center justify-center">
                         <Icon size={18} className="text-[#22D3EE]" />
                       </div>
+
                       <h3 className="text-lg sm:text-xl font-montserrat font-bold text-[#F4F4F4]">
                         {skill.category}
                       </h3>
@@ -1002,14 +799,7 @@ useEffect(() => {
         </div>
       </section>
 
-      {/* EXPERIENCE */}
-      <section
-        id="experience"
-        data-section="experience"
-        className={`py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative z-10 transition-all duration-700 ${
-          visibleSections.has("experience") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-        }`}
-      >
+      <section id="experience" data-section="experience" className={sectionClass("experience")}>
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-montserrat font-bold mb-12 sm:mb-16 text-center">
             Work <span className="gradient-text">Experience</span>
@@ -1053,14 +843,7 @@ useEffect(() => {
         </div>
       </section>
 
-      {/* PROJECTS */}
-      <section
-        id="projects"
-        data-section="projects"
-        className={`py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative z-10 transition-all duration-700 ${
-          visibleSections.has("projects") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-        }`}
-      >
+      <section id="projects" data-section="projects" className={sectionClass("projects")}>
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-montserrat font-bold mb-12 sm:mb-16 text-center">
             Featured <span className="gradient-text">Projects</span>
@@ -1089,7 +872,9 @@ useEffect(() => {
                     />
 
                     <div className="flex items-center justify-between mb-4">
-                      <span className={`text-xs font-mono font-bold bg-gradient-to-r ${accentGradient} bg-clip-text text-transparent`}>
+                      <span
+                        className={`text-xs font-mono font-bold bg-gradient-to-r ${accentGradient} bg-clip-text text-transparent`}
+                      >
                         / 0{idx + 1}
                       </span>
 
@@ -1114,7 +899,9 @@ useEffect(() => {
                       {project.title}
                     </h3>
 
-                    <p className={`bg-gradient-to-r ${accentGradient} bg-clip-text text-transparent text-sm font-medium mb-4`}>
+                    <p
+                      className={`bg-gradient-to-r ${accentGradient} bg-clip-text text-transparent text-sm font-medium mb-4`}
+                    >
                       {project.tagline}
                     </p>
 
@@ -1140,14 +927,7 @@ useEffect(() => {
         </div>
       </section>
 
-      {/* EDUCATION */}
-      <section
-        id="education"
-        data-section="education"
-        className={`py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative z-10 transition-all duration-700 ${
-          visibleSections.has("education") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-        }`}
-      >
+      <section id="education" data-section="education" className={sectionClass("education")}>
         <div className="max-w-5xl mx-auto">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-montserrat font-bold mb-12 sm:mb-16 text-center">
             Education <span className="gradient-text">& Certifications</span>
@@ -1160,13 +940,19 @@ useEffect(() => {
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#22D3EE]/20 to-[#A78BFA]/20 border border-[#22D3EE]/30 flex items-center justify-center">
                     <GraduationCap size={22} className="text-[#22D3EE]" />
                   </div>
+
                   <h3 className="text-xl sm:text-2xl font-montserrat font-bold gradient-text">
                     Education
                   </h3>
                 </div>
 
-                <p className="text-[#F4F4F4] font-semibold mb-2 text-lg">{education.degree}</p>
-                <p className="text-[#C7C9D9] mb-2 text-sm sm:text-base">{education.university}</p>
+                <p className="text-[#F4F4F4] font-semibold mb-2 text-lg">
+                  {education.degree}
+                </p>
+                <p className="text-[#C7C9D9] mb-2 text-sm sm:text-base">
+                  {education.university}
+                </p>
+
                 <div className="flex items-center gap-2 text-[#9CA0B5] text-sm mt-3">
                   <Calendar size={14} />
                   <span>{education.period}</span>
@@ -1180,6 +966,7 @@ useEffect(() => {
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#A78BFA]/20 to-[#F472B6]/20 border border-[#A78BFA]/30 flex items-center justify-center">
                     <Award size={22} className="text-[#A78BFA]" />
                   </div>
+
                   <h3 className="text-xl sm:text-2xl font-montserrat font-bold gradient-text">
                     Certifications
                   </h3>
@@ -1194,6 +981,7 @@ useEffect(() => {
                           cert.accent === "cyan" ? "text-[#22D3EE]" : "text-[#A78BFA]"
                         }`}
                       />
+
                       <div>
                         <p className="text-[#F4F4F4] font-semibold">{cert.title}</p>
                         <p className="text-[#9CA0B5] text-sm">{cert.period}</p>
@@ -1211,6 +999,7 @@ useEffect(() => {
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#22D3EE]/20 to-[#A78BFA]/20 border border-[#22D3EE]/30 flex items-center justify-center">
                   <Star size={22} className="text-[#22D3EE]" />
                 </div>
+
                 <h3 className="text-xl sm:text-2xl font-montserrat font-bold gradient-text">
                   Languages
                 </h3>
@@ -1231,14 +1020,7 @@ useEffect(() => {
         </div>
       </section>
 
-      {/* CONTACT */}
-      <section
-        id="contact"
-        data-section="contact"
-        className={`py-16 sm:py-20 px-4 sm:px-6 lg:px-8 relative z-10 transition-all duration-700 ${
-          visibleSections.has("contact") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-        }`}
-      >
+      <section id="contact" data-section="contact" className={sectionClass("contact")}>
         <div className="max-w-5xl mx-auto relative z-10">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-montserrat font-bold mb-6 text-center">
             Get In <span className="gradient-text">Touch</span>
@@ -1255,6 +1037,7 @@ useEffect(() => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-10">
               {contactItems.map((item, idx) => {
                 const Icon = item.icon;
+
                 const cardContent = (
                   <div className="flex flex-col items-center text-center gap-3 p-5 sm:p-6 glass-card glass-card-hover rounded-2xl transition-all duration-300 transform hover:-translate-y-1 h-full min-h-[170px] justify-center">
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#22D3EE]/20 to-[#A78BFA]/20 border border-[#22D3EE]/30 flex items-center justify-center flex-shrink-0">
@@ -1262,8 +1045,12 @@ useEffect(() => {
                     </div>
 
                     <div className="w-full">
-                      <p className="text-[#9CA0B5] text-xs sm:text-sm mb-1">{item.label}</p>
-                      <p className="text-[#F4F4F4] text-sm font-medium break-words">{item.value}</p>
+                      <p className="text-[#9CA0B5] text-xs sm:text-sm mb-1">
+                        {item.label}
+                      </p>
+                      <p className="text-[#F4F4F4] text-sm font-medium break-words">
+                        {item.value}
+                      </p>
                     </div>
                   </div>
                 );
@@ -1286,12 +1073,14 @@ useEffect(() => {
 
             <div className="text-center border-t border-white/10 pt-8">
               <p className="text-sm sm:text-base text-[#C7C9D9] mb-6 max-w-xl mx-auto">
-                Feel free to reach out via email or phone. I&apos;m always interested in hearing about exciting projects and opportunities.
+                Feel free to reach out via email or phone. I&apos;m always interested in
+                hearing about exciting projects and opportunities.
               </p>
 
               <div className="flex justify-center gap-3 sm:gap-4">
                 {socialLinks.map((social) => {
                   const Icon = social.icon;
+
                   return (
                     <a
                       key={social.key}
@@ -1322,7 +1111,9 @@ useEffect(() => {
       <footer className="border-t border-white/5 py-8 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto text-center">
           <p className="text-[#9CA0B5] text-xs sm:text-sm flex items-center justify-center gap-2 flex-wrap">
-            <span>© {new Date().getFullYear()} {personalInfo.name}.</span>
+            <span>
+              © {new Date().getFullYear()} {personalInfo.name}.
+            </span>
             <span className="text-[#22D3EE]">•</span>
           </p>
         </div>
